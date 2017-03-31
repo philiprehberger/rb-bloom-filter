@@ -3,6 +3,7 @@
 [![Tests](https://github.com/philiprehberger/rb-bloom-filter/actions/workflows/ci.yml/badge.svg)](https://github.com/philiprehberger/rb-bloom-filter/actions/workflows/ci.yml)
 [![Gem Version](https://badge.fury.io/rb/philiprehberger-bloom_filter.svg)](https://rubygems.org/gems/philiprehberger-bloom_filter)
 [![License](https://img.shields.io/github/license/philiprehberger/rb-bloom-filter)](LICENSE)
+[![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ec6cb9)](https://github.com/sponsors/philiprehberger)
 
 Space-efficient probabilistic set with configurable false positive rate
 
@@ -78,4 +79,4 @@ bundle exec rubocop
 
 ## License
 
-MIT
+[MIT](LICENSE)
