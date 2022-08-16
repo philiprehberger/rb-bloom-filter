@@ -10,8 +10,8 @@ Gem::Specification.new do |spec|
 
   spec.summary = 'Space-efficient probabilistic set with configurable false positive rate'
   spec.description = 'Bloom filter implementation using a bit array with double hashing. ' \
-                       'Supports configurable expected items and false positive rate, merge, ' \
-                       'serialization, and memory usage reporting.'
+                     'Supports configurable expected items and false positive rate, merge, ' \
+                     'serialization, and memory usage reporting.'
   spec.homepage = 'https://philiprehberger.com/open-source-packages/ruby/philiprehberger-bloom_filter'
   spec.license = 'MIT'
 
