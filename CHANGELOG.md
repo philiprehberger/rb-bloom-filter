@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-01
+
+### Added
+- `#bulk_add(items)` for adding all items from an enumerable
+- `#count_estimate` for estimating cardinality using the fill rate formula
+- `#intersection(other)` for creating a filter matching items present in both
+- `#fill_rate` for checking the proportion of set bits
+
 ## [0.1.6] - 2026-03-31
 
 ### Added

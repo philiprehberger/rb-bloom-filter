@@ -280,4 +280,93 @@ RSpec.describe Philiprehberger::BloomFilter do
       expect(restored.memory_usage).to eq(filter.memory_usage)
     end
   end
+
+  describe '#bulk_add' do
+    it 'adds all items from an array' do
+      filter = described_class.new(expected_items: 100)
+      filter.bulk_add(%w[alpha beta gamma])
+      expect(filter.include?('alpha')).to be true
+      expect(filter.include?('beta')).to be true
+      expect(filter.include?('gamma')).to be true
+      expect(filter.count).to eq(3)
+    end
+
+    it 'returns self for chaining' do
+      filter = described_class.new(expected_items: 100)
+      expect(filter.bulk_add(%w[a b])).to equal(filter)
+    end
+
+    it 'works with ranges' do
+      filter = described_class.new(expected_items: 100)
+      filter.bulk_add(1..10)
+      expect(filter.include?(5)).to be true
+    end
+  end
+
+  describe '#count_estimate' do
+    it 'returns zero for empty filter' do
+      filter = described_class.new(expected_items: 1000)
+      expect(filter.count_estimate).to eq(0.0)
+    end
+
+    it 'estimates cardinality within reasonable range' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      100.times { |i| filter.add("item-#{i}") }
+      estimate = filter.count_estimate
+      expect(estimate).to be_within(30).of(100)
+    end
+  end
+
+  describe '#intersection' do
+    it 'returns filter matching both' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      a.add('shared')
+      a.add('only-a')
+      b.add('shared')
+      b.add('only-b')
+
+      result = a.intersection(b)
+      expect(result.include?('shared')).to be true
+      expect(result.include?('only-a')).to be false
+      expect(result.include?('only-b')).to be false
+    end
+
+    it 'raises on incompatible filters' do
+      a = described_class.new(expected_items: 100, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 10_000, false_positive_rate: 0.01)
+      expect { a.intersection(b) }.to raise_error(Philiprehberger::BloomFilter::Error)
+    end
+
+    it 'returns empty filter for non-overlapping sets' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.001)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.001)
+      a.add('alpha')
+      b.add('beta')
+      result = a.intersection(b)
+      expect(result.include?('alpha')).to be false
+      expect(result.include?('beta')).to be false
+    end
+  end
+
+  describe '#fill_rate' do
+    it 'returns zero for empty filter' do
+      filter = described_class.new(expected_items: 100)
+      expect(filter.fill_rate).to eq(0.0)
+    end
+
+    it 'increases as items are added' do
+      filter = described_class.new(expected_items: 100)
+      rate1 = filter.fill_rate
+      filter.add('item')
+      rate2 = filter.fill_rate
+      expect(rate2).to be > rate1
+    end
+
+    it 'stays between 0 and 1' do
+      filter = described_class.new(expected_items: 100)
+      50.times { |i| filter.add("item-#{i}") }
+      expect(filter.fill_rate).to be_between(0.0, 1.0)
+    end
+  end
 end

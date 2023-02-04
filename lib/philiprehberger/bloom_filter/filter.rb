@@ -76,6 +76,54 @@ module Philiprehberger
         @bits.bytesize
       end
 
+      # Add all items from an enumerable
+      #
+      # @param items [Enumerable] items to add
+      # @return [self]
+      def bulk_add(items)
+        items.each { |item| add(item) }
+        self
+      end
+
+      # Estimate the number of unique items using the fill rate
+      #
+      # @return [Float] estimated cardinality
+      def count_estimate
+        bits_set = count_set_bits
+        return 0.0 if bits_set.zero?
+
+        -(@bit_size.to_f / @hash_count) * Math.log(1.0 - (bits_set.to_f / @bit_size))
+      end
+
+      # Create a new filter containing only elements present in both filters (AND)
+      #
+      # @param other [Filter] another bloom filter with the same parameters
+      # @return [Filter] new intersection filter
+      # @raise [Error] if the filters have different bit sizes
+      def intersection(other)
+        unless @bit_size == other.instance_variable_get(:@bit_size)
+          raise Error,
+                'cannot intersect filters with different bit sizes'
+        end
+
+        result = self.class.new(expected_items: @expected_items, false_positive_rate: @false_positive_rate)
+        other_bits = other.instance_variable_get(:@bits)
+        result_bits = result.instance_variable_get(:@bits)
+
+        @bits.bytesize.times do |i|
+          result_bits.setbyte(i, @bits.getbyte(i) & other_bits.getbyte(i))
+        end
+
+        result
+      end
+
+      # Return the proportion of set bits in the bit array
+      #
+      # @return [Float] fill rate between 0.0 and 1.0
+      def fill_rate
+        count_set_bits.to_f / @bit_size
+      end
+
       # Serialize the filter to a hash.
       #
       # @return [Hash] serialized representation
@@ -135,6 +183,12 @@ module Philiprehberger
         byte_index = index / 8
         bit_offset = index % 8
         @bits.setbyte(byte_index, @bits.getbyte(byte_index) | (1 << bit_offset))
+      end
+
+      def count_set_bits
+        total = 0
+        @bits.each_byte { |byte| total += byte.digits(2).sum }
+        total
       end
 
       def get_bit(index)
