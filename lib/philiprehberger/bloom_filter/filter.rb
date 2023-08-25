@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'json'
+
 module Philiprehberger
   module BloomFilter
     # A space-efficient probabilistic set membership data structure.
@@ -122,6 +124,87 @@ module Philiprehberger
       # @return [Float] fill rate between 0.0 and 1.0
       def fill_rate
         count_set_bits.to_f / @bit_size
+      end
+
+      # Check structural equality with another filter.
+      #
+      # @param other [Filter] another bloom filter
+      # @return [Boolean] true if both filters have the same structure and bit array
+      def ==(other)
+        return false unless other.is_a?(self.class)
+
+        @bit_size == other.instance_variable_get(:@bit_size) &&
+          @hash_count == other.instance_variable_get(:@hash_count) &&
+          @bits == other.instance_variable_get(:@bits)
+      end
+
+      # Create an independent deep copy of this filter.
+      #
+      # @return [Filter] a new filter with the same state
+      def copy
+        result = self.class.allocate
+        result.instance_variable_set(:@expected_items, @expected_items)
+        result.instance_variable_set(:@false_positive_rate, @false_positive_rate)
+        result.instance_variable_set(:@bit_size, @bit_size)
+        result.instance_variable_set(:@hash_count, @hash_count)
+        result.instance_variable_set(:@bits, @bits.dup)
+        result.instance_variable_set(:@count, @count)
+        result
+      end
+
+      # Calculate the actual false positive rate based on current fill rate.
+      #
+      # Uses the formula: (1 - e^(-k*n/m))^k
+      # where k = hash_count, n = count, m = bit_size.
+      #
+      # @return [Float] estimated false positive rate
+      def false_positive_rate
+        return 0.0 if @count.zero?
+
+        (1.0 - Math.exp(-@hash_count.to_f * @count / @bit_size))**@hash_count
+      end
+
+      # Serialize the filter to a JSON string.
+      #
+      # @return [String] JSON representation
+      def to_json(*_args)
+        JSON.generate(serialize)
+      end
+
+      # Deserialize a filter from a JSON string.
+      #
+      # @param str [String] JSON string
+      # @return [Filter]
+      def self.from_json(str)
+        deserialize(JSON.parse(str))
+      end
+
+      # Check if this filter is a superset of another.
+      #
+      # Returns true if every set bit in `other` is also set in `self`.
+      #
+      # @param other [Filter] another bloom filter with the same parameters
+      # @return [Boolean]
+      # @raise [Error] if the filters have different bit sizes
+      def superset?(other)
+        unless @bit_size == other.instance_variable_get(:@bit_size)
+          raise Error,
+                'cannot compare filters with different bit sizes'
+        end
+
+        other_bits = other.instance_variable_get(:@bits)
+        @bits.bytesize.times do |i|
+          ob = other_bits.getbyte(i)
+          return false unless @bits.getbyte(i) & ob == ob
+        end
+        true
+      end
+
+      # Check if the filter is empty (no items added).
+      #
+      # @return [Boolean] true if count is zero
+      def empty?
+        @count.zero?
       end
 
       # Serialize the filter to a hash.
