@@ -207,6 +207,71 @@ module Philiprehberger
         @count.zero?
       end
 
+      # Create a new filter containing all items present in either filter (OR).
+      #
+      # Non-mutating counterpart to {#merge}.
+      #
+      # @param other [Filter] another bloom filter with the same parameters
+      # @return [Filter] new union filter
+      # @raise [Error] if the filters have different bit sizes
+      def union(other)
+        unless @bit_size == other.instance_variable_get(:@bit_size)
+          raise Error,
+                'cannot union filters with different bit sizes'
+        end
+
+        result = self.class.new(expected_items: @expected_items, false_positive_rate: @false_positive_rate)
+        other_bits = other.instance_variable_get(:@bits)
+        result_bits = result.instance_variable_get(:@bits)
+
+        @bits.bytesize.times do |i|
+          result_bits.setbyte(i, @bits.getbyte(i) | other_bits.getbyte(i))
+        end
+        result.instance_variable_set(:@count, @count + other.count)
+        result
+      end
+
+      # Check whether another filter has compatible structure for merge,
+      # intersection, union, and superset operations.
+      #
+      # @param other [Object] candidate filter
+      # @return [Boolean]
+      def compatible?(other)
+        other.is_a?(self.class) &&
+          @bit_size == other.instance_variable_get(:@bit_size) &&
+          @hash_count == other.instance_variable_get(:@hash_count)
+      end
+
+      # Check whether the filter has reached or exceeded a fill threshold.
+      #
+      # @param threshold [Float] fill rate threshold between 0.0 and 1.0
+      # @return [Boolean]
+      def saturated?(threshold: 0.5)
+        fill_rate >= threshold
+      end
+
+      # Hash code consistent with {#==}, allowing filters to be used as
+      # Hash keys or Set members.
+      #
+      # @return [Integer]
+      def hash
+        [self.class, @bit_size, @hash_count, @bits].hash
+      end
+
+      # @see #==
+      alias eql? ==
+
+      # Human-readable representation for debugging.
+      #
+      # @return [String]
+      def inspect
+        format(
+          '#<%<class>s count=%<count>d bit_size=%<bit_size>d hash_count=%<hash_count>d fill_rate=%<fill>.4f>',
+          class: self.class.name, count: @count, bit_size: @bit_size,
+          hash_count: @hash_count, fill: fill_rate
+        )
+      end
+
       # Serialize the filter to a hash.
       #
       # @return [Hash] serialized representation
