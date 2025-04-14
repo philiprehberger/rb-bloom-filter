@@ -6,6 +6,9 @@ module Philiprehberger
   module BloomFilter
     # A space-efficient probabilistic set membership data structure.
     class Filter
+      POPCOUNT = (0..255).map { |b| b.digits(2).sum }.freeze
+      private_constant :POPCOUNT
+
       attr_reader :count
 
       # @param expected_items [Integer] expected number of items
@@ -242,6 +245,23 @@ module Philiprehberger
           @hash_count == other.instance_variable_get(:@hash_count)
       end
 
+      # Check if this filter is a subset of another.
+      #
+      # Returns true if every set bit in `self` is also set in `other`.
+      #
+      # @param other [Filter] another bloom filter with the same parameters
+      # @return [Boolean]
+      # @raise [Error] if the filters have different bit sizes
+      def subset?(other)
+        other.superset?(self)
+      end
+
+      # @return [Filter] alias for {#union}
+      alias | union
+
+      # @return [Filter] alias for {#intersection}
+      alias & intersection
+
       # Check whether the filter has reached or exceeded a fill threshold.
       #
       # @param threshold [Float] fill rate threshold between 0.0 and 1.0
@@ -335,7 +355,7 @@ module Philiprehberger
 
       def count_set_bits
         total = 0
-        @bits.each_byte { |byte| total += byte.digits(2).sum }
+        @bits.each_byte { |byte| total += POPCOUNT[byte] }
         total
       end
 

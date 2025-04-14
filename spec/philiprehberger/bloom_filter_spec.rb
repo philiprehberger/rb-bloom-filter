@@ -610,6 +610,72 @@ RSpec.describe Philiprehberger::BloomFilter do
     end
   end
 
+  describe '#subset?' do
+    it 'returns true when self is a subset of other' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b.add('alpha')
+      b.add('beta')
+      a.add('alpha')
+      expect(a.subset?(b)).to be true
+    end
+
+    it 'returns false when self has bits not in other' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      a.add('alpha')
+      a.add('beta')
+      b.add('alpha')
+      expect(a.subset?(b)).to be false
+    end
+
+    it 'returns true for two empty filters' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      expect(a.subset?(b)).to be true
+    end
+
+    it 'raises on incompatible filters' do
+      a = described_class.new(expected_items: 100, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 10_000, false_positive_rate: 0.01)
+      expect { a.subset?(b) }.to raise_error(Philiprehberger::BloomFilter::Error)
+    end
+  end
+
+  describe '#| (union operator)' do
+    it 'returns a new filter containing items from both' do
+      a = described_class.new(expected_items: 1000)
+      b = described_class.new(expected_items: 1000)
+      a.add('alpha')
+      b.add('beta')
+      result = a | b
+      expect(result.include?('alpha')).to be true
+      expect(result.include?('beta')).to be true
+    end
+
+    it 'does not mutate the receiver' do
+      a = described_class.new(expected_items: 1000)
+      b = described_class.new(expected_items: 1000)
+      b.add('beta')
+      a | b
+      expect(a.include?('beta')).to be false
+    end
+  end
+
+  describe '#& (intersection operator)' do
+    it 'returns filter matching both' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      a.add('shared')
+      a.add('only-a')
+      b.add('shared')
+      b.add('only-b')
+      result = a & b
+      expect(result.include?('shared')).to be true
+      expect(result.include?('only-a')).to be false
+    end
+  end
+
   describe '#inspect' do
     it 'returns a readable representation including key fields' do
       filter = described_class.new(expected_items: 1000)

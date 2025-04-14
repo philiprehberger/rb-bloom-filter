@@ -134,6 +134,28 @@ result.include?('beta')   # => true
 a.include?('beta')        # => false (a is unchanged)
 ```
 
+### Subset Check
+
+```ruby
+a = Philiprehberger::BloomFilter.new(expected_items: 1000)
+b = Philiprehberger::BloomFilter.new(expected_items: 1000)
+a.add('alpha')
+b.bulk_add(%w[alpha beta gamma])
+a.subset?(b)  # => true
+```
+
+### Operator Aliases
+
+```ruby
+a = Philiprehberger::BloomFilter.new(expected_items: 1000)
+b = Philiprehberger::BloomFilter.new(expected_items: 1000)
+a.add('alpha')
+b.add('beta')
+
+union = a | b              # same as a.union(b)
+intersection = a & b       # same as a.intersection(b)
+```
+
 ### Compatibility Check
 
 ```ruby
@@ -190,8 +212,11 @@ restored.include?('hello')  # => true
 | `#superset?(other)` | Check if self contains all bits of other |
 | `#empty?` | Check if no items have been added |
 | `#union(other)` | Non-mutating OR returning a new filter |
+| `#subset?(other)` | Check if every set bit in self is also set in other |
 | `#compatible?(other)` | Check structural compatibility with another filter |
 | `#saturated?(threshold:)` | True if fill rate is at/above threshold |
+| `#\|(other)` | Operator alias for `#union` |
+| `#&(other)` | Operator alias for `#intersection` |
 | `#hash` / `#eql?` | Hash key support consistent with `#==` |
 | `#inspect` | Human-readable representation |
 | `.deserialize(data)` | Restore a filter from serialized data |
