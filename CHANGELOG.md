@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-03-22
+
+### Changed
+
+- Expand test coverage to 30+ examples covering false positive rate approximation, empty filter queries, duplicate adds, chaining, clear behavior, memory usage with different fp_rate configurations, merge edge cases, and serialization round-trips
+
 ## [0.1.0] - 2026-03-22
 
 ### Added

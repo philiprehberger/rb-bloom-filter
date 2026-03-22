@@ -143,7 +143,7 @@ RSpec.describe Philiprehberger::BloomFilter do
   end
 
   describe 'false positive rate' do
-    it 'stays within expected bounds' do
+    it 'stays within expected bounds for fp_rate 0.05' do
       filter = described_class.new(expected_items: 1000, false_positive_rate: 0.05)
       1000.times { |i| filter.add("item-#{i}") }
 
@@ -151,6 +151,133 @@ RSpec.describe Philiprehberger::BloomFilter do
       rate = false_positives / 1000.0
 
       expect(rate).to be < 0.10
+    end
+
+    it 'stays within expected bounds for fp_rate 0.01' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      1000.times { |i| filter.add("item-#{i}") }
+
+      false_positives = (1000..1999).count { |i| filter.include?("item-#{i}") }
+      rate = false_positives / 1000.0
+
+      expect(rate).to be < 0.05
+    end
+
+    it 'has lower fp rate with lower configured rate' do
+      loose = described_class.new(expected_items: 500, false_positive_rate: 0.1)
+      tight = described_class.new(expected_items: 500, false_positive_rate: 0.001)
+
+      500.times do |i|
+        loose.add("item-#{i}")
+        tight.add("item-#{i}")
+      end
+
+      loose_fps = (500..999).count { |i| loose.include?("item-#{i}") }
+      tight_fps = (500..999).count { |i| tight.include?("item-#{i}") }
+
+      expect(tight_fps).to be <= loose_fps
+    end
+  end
+
+  describe 'empty filter queries' do
+    it 'returns false for any query on an empty filter' do
+      filter = described_class.new(expected_items: 100)
+      expect(filter.include?('anything')).to be false
+      expect(filter.include?(42)).to be false
+      expect(filter.include?(:symbol)).to be false
+    end
+  end
+
+  describe 'duplicate adds' do
+    it 'increments count for each add even if duplicate' do
+      filter = described_class.new(expected_items: 100)
+      filter.add('same')
+      filter.add('same')
+      filter.add('same')
+      expect(filter.count).to eq(3)
+    end
+
+    it 'still reports include? as true after duplicate adds' do
+      filter = described_class.new(expected_items: 100)
+      filter.add('dup')
+      filter.add('dup')
+      expect(filter.include?('dup')).to be true
+    end
+  end
+
+  describe '#add chaining' do
+    it 'returns self for method chaining' do
+      filter = described_class.new(expected_items: 100)
+      result = filter.add('a')
+      expect(result).to equal(filter)
+    end
+
+    it 'supports chained adds' do
+      filter = described_class.new(expected_items: 100)
+      filter.add('a').add('b').add('c')
+      expect(filter.count).to eq(3)
+      expect(filter.include?('a')).to be true
+      expect(filter.include?('c')).to be true
+    end
+  end
+
+  describe '#clear' do
+    it 'makes previously added items not found' do
+      filter = described_class.new(expected_items: 100)
+      filter.add('hello')
+      filter.add('world')
+      filter.clear
+      expect(filter.include?('hello')).to be false
+      expect(filter.include?('world')).to be false
+    end
+
+    it 'returns self for chaining' do
+      filter = described_class.new(expected_items: 100)
+      expect(filter.clear).to equal(filter)
+    end
+  end
+
+  describe '#memory_usage with different fp_rate configurations' do
+    it 'uses more memory with lower false positive rate' do
+      loose = described_class.new(expected_items: 1000, false_positive_rate: 0.1)
+      tight = described_class.new(expected_items: 1000, false_positive_rate: 0.001)
+      expect(tight.memory_usage).to be > loose.memory_usage
+    end
+  end
+
+  describe '#merge' do
+    it 'updates count after merge' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      a.add('x')
+      b.add('y')
+      b.add('z')
+      a.merge(b)
+      expect(a.count).to eq(3)
+    end
+
+    it 'returns self for chaining' do
+      a = described_class.new(expected_items: 100, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 100, false_positive_rate: 0.01)
+      expect(a.merge(b)).to equal(a)
+    end
+  end
+
+  describe '#serialize and .deserialize edge cases' do
+    it 'round-trips an empty filter' do
+      filter = described_class.new(expected_items: 100)
+      data = filter.serialize
+      restored = described_class.deserialize(data)
+      expect(restored.count).to eq(0)
+      expect(restored.include?('anything')).to be false
+    end
+
+    it 'preserves memory_usage after round-trip' do
+      filter = described_class.new(expected_items: 500, false_positive_rate: 0.01)
+      10.times { |i| filter.add("item-#{i}") }
+      data = filter.serialize
+      restored = described_class.deserialize(data)
+      expect(restored.memory_usage).to eq(filter.memory_usage)
     end
   end
 end
