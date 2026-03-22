@@ -1,0 +1,156 @@
+# frozen_string_literal: true
+
+require 'spec_helper'
+
+RSpec.describe Philiprehberger::BloomFilter do
+  describe 'VERSION' do
+    it 'has a version number' do
+      expect(Philiprehberger::BloomFilter::VERSION).not_to be_nil
+    end
+  end
+
+  describe '.new' do
+    it 'creates a filter with expected parameters' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      expect(filter).to be_a(Philiprehberger::BloomFilter::Filter)
+    end
+
+    it 'raises on non-positive expected_items' do
+      expect { described_class.new(expected_items: 0, false_positive_rate: 0.01) }
+        .to raise_error(Philiprehberger::BloomFilter::Error)
+    end
+
+    it 'raises on invalid false_positive_rate' do
+      expect { described_class.new(expected_items: 100, false_positive_rate: 0.0) }
+        .to raise_error(Philiprehberger::BloomFilter::Error)
+    end
+
+    it 'raises when false_positive_rate is 1.0 or above' do
+      expect { described_class.new(expected_items: 100, false_positive_rate: 1.0) }
+        .to raise_error(Philiprehberger::BloomFilter::Error)
+    end
+
+    it 'defaults false_positive_rate to 0.01' do
+      filter = described_class.new(expected_items: 100)
+      expect(filter.count).to eq(0)
+    end
+  end
+
+  describe '#add and #include?' do
+    let(:filter) { described_class.new(expected_items: 1000, false_positive_rate: 0.01) }
+
+    it 'returns true for added items' do
+      filter.add('hello')
+      expect(filter.include?('hello')).to be true
+    end
+
+    it 'returns false for items not added' do
+      expect(filter.include?('missing')).to be false
+    end
+
+    it 'handles multiple items' do
+      %w[alpha beta gamma].each { |item| filter.add(item) }
+      expect(filter.include?('alpha')).to be true
+      expect(filter.include?('beta')).to be true
+      expect(filter.include?('gamma')).to be true
+    end
+
+    it 'handles integer items via to_s' do
+      filter.add(42)
+      expect(filter.include?(42)).to be true
+    end
+
+    it 'handles symbol items via to_s' do
+      filter.add(:test)
+      expect(filter.include?(:test)).to be true
+    end
+  end
+
+  describe '#count' do
+    it 'starts at zero' do
+      filter = described_class.new(expected_items: 100)
+      expect(filter.count).to eq(0)
+    end
+
+    it 'increments with each add' do
+      filter = described_class.new(expected_items: 100)
+      filter.add('a')
+      filter.add('b')
+      expect(filter.count).to eq(2)
+    end
+  end
+
+  describe '#clear' do
+    it 'resets the filter' do
+      filter = described_class.new(expected_items: 100)
+      filter.add('hello')
+      filter.clear
+      expect(filter.count).to eq(0)
+      expect(filter.include?('hello')).to be false
+    end
+  end
+
+  describe '#memory_usage' do
+    it 'returns positive byte count' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      expect(filter.memory_usage).to be > 0
+    end
+
+    it 'increases with more expected items' do
+      small = described_class.new(expected_items: 100, false_positive_rate: 0.01)
+      large = described_class.new(expected_items: 10_000, false_positive_rate: 0.01)
+      expect(large.memory_usage).to be > small.memory_usage
+    end
+  end
+
+  describe '#merge' do
+    it 'combines two filters' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      a.add('alpha')
+      b.add('beta')
+      a.merge(b)
+      expect(a.include?('alpha')).to be true
+      expect(a.include?('beta')).to be true
+    end
+
+    it 'raises on incompatible filters' do
+      a = described_class.new(expected_items: 100, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 10_000, false_positive_rate: 0.01)
+      expect { a.merge(b) }.to raise_error(Philiprehberger::BloomFilter::Error)
+    end
+  end
+
+  describe '#serialize and .deserialize' do
+    it 'round-trips correctly' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      filter.add('hello')
+      filter.add('world')
+
+      data = filter.serialize
+      restored = described_class.deserialize(data)
+
+      expect(restored.include?('hello')).to be true
+      expect(restored.include?('world')).to be true
+      expect(restored.count).to eq(2)
+    end
+
+    it 'serializes to a hash with expected keys' do
+      filter = described_class.new(expected_items: 100)
+      data = filter.serialize
+      expect(data).to include('expected_items', 'false_positive_rate', 'bit_size', 'hash_count', 'bits', 'count')
+    end
+  end
+
+  describe 'false positive rate' do
+    it 'stays within expected bounds' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.05)
+      1000.times { |i| filter.add("item-#{i}") }
+
+      false_positives = (1000..1999).count { |i| filter.include?("item-#{i}") }
+      rate = false_positives / 1000.0
+
+      expect(rate).to be < 0.10
+    end
+  end
+end
