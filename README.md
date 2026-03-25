@@ -4,7 +4,7 @@
 [![Gem Version](https://badge.fury.io/rb/philiprehberger-bloom_filter.svg)](https://rubygems.org/gems/philiprehberger-bloom_filter)
 [![License](https://img.shields.io/github/license/philiprehberger/rb-bloom-filter)](LICENSE)
 
-Space-efficient probabilistic set with configurable false positive rate.
+Space-efficient probabilistic set with configurable false positive rate
 
 ## Requirements
 
