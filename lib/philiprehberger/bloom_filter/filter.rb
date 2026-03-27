@@ -9,8 +9,11 @@ module Philiprehberger
       # @param expected_items [Integer] expected number of items
       # @param false_positive_rate [Float] desired false positive rate
       def initialize(expected_items:, false_positive_rate: 0.01)
-        raise Error, 'expected_items must be positive' unless expected_items.is_a?(Integer) && expected_items > 0
-        raise Error, 'false_positive_rate must be between 0 and 1' unless false_positive_rate > 0 && false_positive_rate < 1
+        raise Error, 'expected_items must be positive' unless expected_items.is_a?(Integer) && expected_items.positive?
+        unless false_positive_rate.positive? && false_positive_rate < 1
+          raise Error,
+                'false_positive_rate must be between 0 and 1'
+        end
 
         @expected_items = expected_items
         @false_positive_rate = false_positive_rate
@@ -44,7 +47,10 @@ module Philiprehberger
       # @return [self]
       # @raise [Error] if the filters have different bit sizes
       def merge(other)
-        raise Error, 'cannot merge filters with different bit sizes' unless @bit_size == other.instance_variable_get(:@bit_size)
+        unless @bit_size == other.instance_variable_get(:@bit_size)
+          raise Error,
+                'cannot merge filters with different bit sizes'
+        end
 
         other_bits = other.instance_variable_get(:@bits)
         @bits.bytesize.times do |i|
@@ -134,7 +140,7 @@ module Philiprehberger
       def get_bit(index)
         byte_index = index / 8
         bit_offset = index % 8
-        (@bits.getbyte(byte_index) & (1 << bit_offset)) != 0
+        @bits.getbyte(byte_index).anybits?(1 << bit_offset)
       end
     end
   end
