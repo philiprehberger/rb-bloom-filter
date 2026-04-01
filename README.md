@@ -46,6 +46,39 @@ a.merge(b)
 a.include?('beta')  # => true
 ```
 
+### Bulk Add
+
+```ruby
+filter = Philiprehberger::BloomFilter.new(expected_items: 10_000)
+filter.bulk_add(%w[alpha beta gamma delta])
+filter.include?('beta')  # => true
+```
+
+### Cardinality Estimation
+
+```ruby
+filter.count_estimate  # => ~4.0 (estimated unique items)
+```
+
+### Intersection
+
+```ruby
+a = Philiprehberger::BloomFilter.new(expected_items: 1000)
+b = Philiprehberger::BloomFilter.new(expected_items: 1000)
+a.bulk_add(%w[shared only-a])
+b.bulk_add(%w[shared only-b])
+
+result = a.intersection(b)
+result.include?('shared')  # => true
+result.include?('only-a')  # => false
+```
+
+### Fill Rate
+
+```ruby
+filter.fill_rate  # => 0.023 (proportion of set bits)
+```
+
 ### Serialization
 
 ```ruby
@@ -66,6 +99,10 @@ restored.include?('hello')  # => true
 | `#count` | Number of items added |
 | `#memory_usage` | Bit array size in bytes |
 | `#serialize` | Serialize to a hash |
+| `#bulk_add(items)` | Add all items from an enumerable |
+| `#count_estimate` | Estimate unique item count from fill rate |
+| `#intersection(other)` | Create filter matching items in both |
+| `#fill_rate` | Proportion of set bits (0.0 to 1.0) |
 | `.deserialize(data)` | Restore a filter from serialized data |
 
 ## Development
