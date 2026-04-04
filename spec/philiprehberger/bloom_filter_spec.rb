@@ -349,6 +349,162 @@ RSpec.describe Philiprehberger::BloomFilter do
     end
   end
 
+  describe '#==' do
+    it 'returns true for filters with identical state' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      a.add('hello')
+      b.add('hello')
+      expect(a).to eq(b)
+    end
+
+    it 'returns false for filters with different items' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      a.add('hello')
+      b.add('world')
+      expect(a).not_to eq(b)
+    end
+
+    it 'returns false for filters with different sizes' do
+      a = described_class.new(expected_items: 100, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 10_000, false_positive_rate: 0.01)
+      expect(a).not_to eq(b)
+    end
+
+    it 'returns false when compared with non-filter' do
+      a = described_class.new(expected_items: 100)
+      expect(a).not_to eq('not a filter')
+    end
+  end
+
+  describe '#copy' do
+    it 'returns an equal filter' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      filter.add('hello')
+      clone = filter.copy
+      expect(clone).to eq(filter)
+      expect(clone.count).to eq(filter.count)
+    end
+
+    it 'returns an independent filter' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      filter.add('hello')
+      clone = filter.copy
+      clone.add('world')
+      expect(clone.include?('world')).to be true
+      expect(filter.include?('world')).to be false
+      expect(clone.count).not_to eq(filter.count)
+    end
+
+    it 'is not the same object' do
+      filter = described_class.new(expected_items: 100)
+      expect(filter.copy).not_to equal(filter)
+    end
+  end
+
+  describe '#false_positive_rate' do
+    it 'returns zero for empty filter' do
+      filter = described_class.new(expected_items: 1000)
+      expect(filter.false_positive_rate).to eq(0.0)
+    end
+
+    it 'returns a rate between 0 and 1 for non-empty filter' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      100.times { |i| filter.add("item-#{i}") }
+      rate = filter.false_positive_rate
+      expect(rate).to be > 0.0
+      expect(rate).to be < 1.0
+    end
+
+    it 'increases as more items are added' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      10.times { |i| filter.add("item-#{i}") }
+      rate_low = filter.false_positive_rate
+      500.times { |i| filter.add("extra-#{i}") }
+      rate_high = filter.false_positive_rate
+      expect(rate_high).to be > rate_low
+    end
+  end
+
+  describe '#to_json / .from_json' do
+    it 'round-trips correctly' do
+      filter = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      filter.add('hello')
+      filter.add('world')
+      json = filter.to_json
+      restored = described_class.from_json(json)
+      expect(restored.include?('hello')).to be true
+      expect(restored.include?('world')).to be true
+      expect(restored.count).to eq(2)
+    end
+
+    it 'produces valid JSON string' do
+      filter = described_class.new(expected_items: 100)
+      json = filter.to_json
+      expect { JSON.parse(json) }.not_to raise_error
+    end
+
+    it 'round-trips an empty filter' do
+      filter = described_class.new(expected_items: 100)
+      restored = described_class.from_json(filter.to_json)
+      expect(restored.count).to eq(0)
+      expect(restored.include?('anything')).to be false
+    end
+  end
+
+  describe '#superset?' do
+    it 'returns true when self contains all bits of other' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      a.add('alpha')
+      a.add('beta')
+      b.add('alpha')
+      expect(a.superset?(b)).to be true
+    end
+
+    it 'returns false when other has bits not in self' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      a.add('alpha')
+      b.add('alpha')
+      b.add('beta')
+      expect(a.superset?(b)).to be false
+    end
+
+    it 'returns true for two empty filters' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      expect(a.superset?(b)).to be true
+    end
+
+    it 'raises on incompatible filters' do
+      a = described_class.new(expected_items: 100, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 10_000, false_positive_rate: 0.01)
+      expect { a.superset?(b) }.to raise_error(Philiprehberger::BloomFilter::Error)
+    end
+  end
+
+  describe '#empty?' do
+    it 'returns true for a new filter' do
+      filter = described_class.new(expected_items: 100)
+      expect(filter.empty?).to be true
+    end
+
+    it 'returns false after adding an item' do
+      filter = described_class.new(expected_items: 100)
+      filter.add('hello')
+      expect(filter.empty?).to be false
+    end
+
+    it 'returns true after clearing' do
+      filter = described_class.new(expected_items: 100)
+      filter.add('hello')
+      filter.clear
+      expect(filter.empty?).to be true
+    end
+  end
+
   describe '#fill_rate' do
     it 'returns zero for empty filter' do
       filter = described_class.new(expected_items: 100)

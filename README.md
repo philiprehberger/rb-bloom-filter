@@ -79,11 +79,60 @@ result.include?('only-a')  # => false
 filter.fill_rate  # => 0.023 (proportion of set bits)
 ```
 
+### Equality and Copying
+
+```ruby
+a = Philiprehberger::BloomFilter.new(expected_items: 1000)
+b = Philiprehberger::BloomFilter.new(expected_items: 1000)
+a.add('hello')
+b.add('hello')
+a == b  # => true
+
+clone = a.copy
+clone.add('world')
+a.include?('world')  # => false (independent copy)
+```
+
+### False Positive Rate
+
+```ruby
+filter = Philiprehberger::BloomFilter.new(expected_items: 1000, false_positive_rate: 0.01)
+100.times { |i| filter.add("item-#{i}") }
+filter.false_positive_rate  # => ~0.0001 (actual rate based on current fill)
+```
+
+### Superset Check
+
+```ruby
+a = Philiprehberger::BloomFilter.new(expected_items: 1000)
+b = Philiprehberger::BloomFilter.new(expected_items: 1000)
+a.bulk_add(%w[alpha beta gamma])
+b.add('alpha')
+a.superset?(b)  # => true
+```
+
+### Empty Check
+
+```ruby
+filter = Philiprehberger::BloomFilter.new(expected_items: 1000)
+filter.empty?  # => true
+filter.add('hello')
+filter.empty?  # => false
+```
+
 ### Serialization
 
 ```ruby
 data = filter.serialize
 restored = Philiprehberger::BloomFilter.deserialize(data)
+restored.include?('hello')  # => true
+```
+
+### JSON Serialization
+
+```ruby
+json = filter.to_json
+restored = Philiprehberger::BloomFilter.from_json(json)
 restored.include?('hello')  # => true
 ```
 
@@ -103,7 +152,14 @@ restored.include?('hello')  # => true
 | `#count_estimate` | Estimate unique item count from fill rate |
 | `#intersection(other)` | Create filter matching items in both |
 | `#fill_rate` | Proportion of set bits (0.0 to 1.0) |
+| `#==(other)` | Structural equality comparison |
+| `#copy` | Create an independent deep clone |
+| `#false_positive_rate` | Actual FP rate based on current fill |
+| `#to_json` | Serialize to JSON string |
+| `#superset?(other)` | Check if self contains all bits of other |
+| `#empty?` | Check if no items have been added |
 | `.deserialize(data)` | Restore a filter from serialized data |
+| `.from_json(str)` | Restore a filter from a JSON string |
 
 ## Development
 

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-03
+
+### Added
+- `#==(other)` for structural equality comparison
+- `#copy` for creating an independent deep clone
+- `#false_positive_rate` for calculating actual FP rate based on fill rate and hash count
+- `#to_json` / `.from_json(str)` for JSON serialization convenience
+- `#superset?(other)` for checking if every set bit in other is also set in self
+- `#empty?` for checking if the filter has no items added
+
 ## [0.2.0] - 2026-04-01
 
 ### Added

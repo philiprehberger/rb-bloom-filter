@@ -23,5 +23,13 @@ module Philiprehberger
     def self.deserialize(data)
       Filter.deserialize(data)
     end
+
+    # Deserialize a bloom filter from a JSON string.
+    #
+    # @param str [String] JSON string
+    # @return [Filter] a restored bloom filter instance
+    def self.from_json(str)
+      Filter.from_json(str)
+    end
   end
 end
