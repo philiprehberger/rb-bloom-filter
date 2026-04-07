@@ -22,8 +22,14 @@ module Philiprehberger
 
         @expected_items = expected_items
         @false_positive_rate = false_positive_rate
-        @bit_size = optimal_bit_size(expected_items, false_positive_rate)
-        @hash_count = optimal_hash_count(@bit_size, expected_items)
+        @bit_size = BloomFilter.optimal_size(
+          expected_items: expected_items,
+          false_positive_rate: false_positive_rate
+        )
+        @hash_count = BloomFilter.optimal_hash_count(
+          size: @bit_size,
+          expected_items: expected_items
+        )
         @bits = "\0".b * ((@bit_size + 7) / 8)
         @count = 0
       end
@@ -322,14 +328,6 @@ module Philiprehberger
       end
 
       private
-
-      def optimal_bit_size(n, p)
-        (-(n * Math.log(p)) / (Math.log(2)**2)).ceil
-      end
-
-      def optimal_hash_count(m, n)
-        [(m.to_f / n * Math.log(2)).ceil, 1].max
-      end
 
       def hash_indices(key)
         h1 = murmur_hash(key, 0)
