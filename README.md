@@ -120,6 +120,37 @@ filter.add('hello')
 filter.empty?  # => false
 ```
 
+### Union (Non-Mutating)
+
+```ruby
+a = Philiprehberger::BloomFilter.new(expected_items: 1000)
+b = Philiprehberger::BloomFilter.new(expected_items: 1000)
+a.add('alpha')
+b.add('beta')
+
+result = a.union(b)
+result.include?('alpha')  # => true
+result.include?('beta')   # => true
+a.include?('beta')        # => false (a is unchanged)
+```
+
+### Compatibility Check
+
+```ruby
+a = Philiprehberger::BloomFilter.new(expected_items: 1000)
+b = Philiprehberger::BloomFilter.new(expected_items: 1000)
+a.compatible?(b)  # => true, safe to merge / intersect / union
+```
+
+### Saturation Check
+
+```ruby
+filter = Philiprehberger::BloomFilter.new(expected_items: 100)
+filter.saturated?  # => false
+200.times { |i| filter.add("item-#{i}") }
+filter.saturated?(threshold: 0.5)  # => true
+```
+
 ### Serialization
 
 ```ruby
@@ -158,6 +189,11 @@ restored.include?('hello')  # => true
 | `#to_json` | Serialize to JSON string |
 | `#superset?(other)` | Check if self contains all bits of other |
 | `#empty?` | Check if no items have been added |
+| `#union(other)` | Non-mutating OR returning a new filter |
+| `#compatible?(other)` | Check structural compatibility with another filter |
+| `#saturated?(threshold:)` | True if fill rate is at/above threshold |
+| `#hash` / `#eql?` | Hash key support consistent with `#==` |
+| `#inspect` | Human-readable representation |
 | `.deserialize(data)` | Restore a filter from serialized data |
 | `.from_json(str)` | Restore a filter from a JSON string |
 

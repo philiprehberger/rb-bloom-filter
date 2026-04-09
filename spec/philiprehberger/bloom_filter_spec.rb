@@ -525,4 +525,101 @@ RSpec.describe Philiprehberger::BloomFilter do
       expect(filter.fill_rate).to be_between(0.0, 1.0)
     end
   end
+
+  describe '#union' do
+    it 'returns a new filter containing items from both' do
+      a = described_class.new(expected_items: 1000)
+      b = described_class.new(expected_items: 1000)
+      a.add('alpha')
+      b.add('beta')
+      result = a.union(b)
+      expect(result.include?('alpha')).to be(true)
+      expect(result.include?('beta')).to be(true)
+    end
+
+    it 'does not mutate the receiver' do
+      a = described_class.new(expected_items: 1000)
+      b = described_class.new(expected_items: 1000)
+      b.add('beta')
+      a.union(b)
+      expect(a.include?('beta')).to be(false)
+    end
+
+    it 'raises on incompatible bit sizes' do
+      a = described_class.new(expected_items: 100)
+      b = described_class.new(expected_items: 100_000)
+      expect { a.union(b) }.to raise_error(Philiprehberger::BloomFilter::Error)
+    end
+  end
+
+  describe '#compatible?' do
+    it 'returns true for filters with same parameters' do
+      a = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      b = described_class.new(expected_items: 1000, false_positive_rate: 0.01)
+      expect(a.compatible?(b)).to be(true)
+    end
+
+    it 'returns false for filters with different parameters' do
+      a = described_class.new(expected_items: 100)
+      b = described_class.new(expected_items: 100_000)
+      expect(a.compatible?(b)).to be(false)
+    end
+
+    it 'returns false for non-filter values' do
+      a = described_class.new(expected_items: 100)
+      expect(a.compatible?('not a filter')).to be(false)
+    end
+  end
+
+  describe '#saturated?' do
+    it 'returns false for an empty filter' do
+      filter = described_class.new(expected_items: 1000)
+      expect(filter.saturated?).to be(false)
+    end
+
+    it 'returns true once fill rate reaches threshold' do
+      filter = described_class.new(expected_items: 100)
+      200.times { |i| filter.add("item-#{i}") }
+      expect(filter.saturated?(threshold: 0.1)).to be(true)
+    end
+
+    it 'accepts a custom threshold' do
+      filter = described_class.new(expected_items: 1000)
+      filter.add('one')
+      expect(filter.saturated?(threshold: 0.99)).to be(false)
+    end
+  end
+
+  describe '#hash' do
+    it 'is consistent with #== for equal filters' do
+      a = described_class.new(expected_items: 1000)
+      b = described_class.new(expected_items: 1000)
+      a.add('hello')
+      b.add('hello')
+      expect(a == b).to be(true)
+      expect(a.hash).to eq(b.hash)
+    end
+
+    it 'allows filters to be used as Hash keys' do
+      a = described_class.new(expected_items: 1000)
+      b = described_class.new(expected_items: 1000)
+      a.add('x')
+      b.add('x')
+      h = { a => :value }
+      expect(h[b]).to eq(:value)
+    end
+  end
+
+  describe '#inspect' do
+    it 'returns a readable representation including key fields' do
+      filter = described_class.new(expected_items: 1000)
+      filter.add('hello')
+      str = filter.inspect
+      expect(str).to include('Philiprehberger::BloomFilter::Filter')
+      expect(str).to include('count=1')
+      expect(str).to include('bit_size=')
+      expect(str).to include('hash_count=')
+      expect(str).to include('fill_rate=')
+    end
+  end
 end

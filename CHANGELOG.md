@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-09
+
+### Added
+- `#union(other)` for non-mutating OR returning a new filter
+- `#compatible?(other)` for checking structural compatibility before merge/intersection/union
+- `#saturated?(threshold:)` for detecting when fill rate reaches a threshold
+- `#hash` and `#eql?` so filters work as Hash keys and Set members
+- `#inspect` with a readable representation including count, bit_size, hash_count, and fill_rate
+
 ## [0.3.0] - 2026-04-03
 
 ### Added
