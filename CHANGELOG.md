@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-10
+
+### Added
+- `#subset?(other)` for checking if every set bit in self is also set in other
+- `#|` operator alias for `#union`
+- `#&` operator alias for `#intersection`
+
+### Changed
+- Optimize `count_set_bits` with a popcount lookup table for faster `#fill_rate`, `#count_estimate`, `#saturated?`, and `#false_positive_rate`
+
 ## [0.4.0] - 2026-04-09
 
 ### Added
