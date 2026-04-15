@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-04-15
+
+### Fixed
+- Correct homepage URL in gemspec to use hyphenated `philiprehberger-bloom-filter` path
+- Add missing `gem-version` input and `placeholder` code block to bug report issue template
+- Require Ruby version input on bug reports
+- Add missing `alternatives` field and `placeholder` code block to feature request issue template
+
 ## [0.5.0] - 2026-04-10
 
 ### Added
