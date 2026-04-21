@@ -36,6 +36,137 @@ RSpec.describe Philiprehberger::BloomFilter do
     end
   end
 
+  describe '.optimal_size' do
+    it 'returns a positive Integer' do
+      size = described_class.optimal_size(expected_items: 1000, false_positive_rate: 0.01)
+      expect(size).to be_a(Integer)
+      expect(size).to be > 0
+    end
+
+    it 'matches the textbook formula for known inputs' do
+      n = 1000
+      p = 0.01
+      expected = (-(n * Math.log(p)) / (Math.log(2)**2)).ceil
+      expect(described_class.optimal_size(expected_items: n, false_positive_rate: p)).to eq(expected)
+    end
+
+    it 'grows as expected_items grows' do
+      small = described_class.optimal_size(expected_items: 100, false_positive_rate: 0.01)
+      large = described_class.optimal_size(expected_items: 10_000, false_positive_rate: 0.01)
+      expect(large).to be > small
+    end
+
+    it 'grows as false_positive_rate tightens' do
+      loose = described_class.optimal_size(expected_items: 1000, false_positive_rate: 0.1)
+      tight = described_class.optimal_size(expected_items: 1000, false_positive_rate: 0.001)
+      expect(tight).to be > loose
+    end
+
+    it 'defaults false_positive_rate to 0.01' do
+      default = described_class.optimal_size(expected_items: 1000)
+      explicit = described_class.optimal_size(expected_items: 1000, false_positive_rate: 0.01)
+      expect(default).to eq(explicit)
+    end
+
+    it 'raises ArgumentError for zero expected_items' do
+      expect { described_class.optimal_size(expected_items: 0, false_positive_rate: 0.01) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for negative expected_items' do
+      expect { described_class.optimal_size(expected_items: -5, false_positive_rate: 0.01) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for non-Integer expected_items' do
+      expect { described_class.optimal_size(expected_items: 1.5, false_positive_rate: 0.01) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for zero false_positive_rate' do
+      expect { described_class.optimal_size(expected_items: 100, false_positive_rate: 0.0) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for false_positive_rate of 1.0' do
+      expect { described_class.optimal_size(expected_items: 100, false_positive_rate: 1.0) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for false_positive_rate above 1' do
+      expect { described_class.optimal_size(expected_items: 100, false_positive_rate: 1.5) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for negative false_positive_rate' do
+      expect { described_class.optimal_size(expected_items: 100, false_positive_rate: -0.1) }
+        .to raise_error(ArgumentError)
+    end
+  end
+
+  describe '.optimal_hash_count' do
+    it 'returns a positive Integer' do
+      k = described_class.optimal_hash_count(size: 9600, expected_items: 1000)
+      expect(k).to be_a(Integer)
+      expect(k).to be > 0
+    end
+
+    it 'matches the textbook formula for known inputs' do
+      m = 9600
+      n = 1000
+      expected = [(m.to_f / n * Math.log(2)).ceil, 1].max
+      expect(described_class.optimal_hash_count(size: m, expected_items: n)).to eq(expected)
+    end
+
+    it 'returns at least 1 even when the ratio is tiny' do
+      expect(described_class.optimal_hash_count(size: 1, expected_items: 1_000_000)).to eq(1)
+    end
+
+    it 'increases with larger size for fixed expected_items' do
+      small = described_class.optimal_hash_count(size: 1000, expected_items: 100)
+      large = described_class.optimal_hash_count(size: 100_000, expected_items: 100)
+      expect(large).to be > small
+    end
+
+    it 'raises ArgumentError for zero size' do
+      expect { described_class.optimal_hash_count(size: 0, expected_items: 100) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for negative size' do
+      expect { described_class.optimal_hash_count(size: -10, expected_items: 100) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for non-Integer size' do
+      expect { described_class.optimal_hash_count(size: 10.5, expected_items: 100) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for zero expected_items' do
+      expect { described_class.optimal_hash_count(size: 1000, expected_items: 0) }
+        .to raise_error(ArgumentError)
+    end
+
+    it 'raises ArgumentError for negative expected_items' do
+      expect { described_class.optimal_hash_count(size: 1000, expected_items: -3) }
+        .to raise_error(ArgumentError)
+    end
+  end
+
+  describe 'Filter sizing consistency' do
+    it 'allocates exactly the bits computed by .optimal_size' do
+      expected_items = 1000
+      false_positive_rate = 0.01
+      filter = described_class.new(expected_items: expected_items, false_positive_rate: false_positive_rate)
+      expected_bits = described_class.optimal_size(
+        expected_items: expected_items,
+        false_positive_rate: false_positive_rate
+      )
+      expect(filter.memory_usage).to eq((expected_bits + 7) / 8)
+    end
+  end
+
   describe '#add and #include?' do
     let(:filter) { described_class.new(expected_items: 1000, false_positive_rate: 0.01) }
 

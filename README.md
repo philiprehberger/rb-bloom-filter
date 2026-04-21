@@ -35,6 +35,18 @@ filter.include?('hello')  # => true
 filter.include?('world')  # => false
 ```
 
+### Pre-sizing
+
+Compute the optimal bit-array size and hash-function count before allocating a filter — useful for budgeting memory or sharing parameters between processes.
+
+```ruby
+bits = Philiprehberger::BloomFilter.optimal_size(expected_items: 10_000, false_positive_rate: 0.01)
+# => 95851
+
+hash_count = Philiprehberger::BloomFilter.optimal_hash_count(size: bits, expected_items: 10_000)
+# => 7
+```
+
 ### Merge Filters
 
 ```ruby
@@ -194,6 +206,8 @@ restored.include?('hello')  # => true
 | Method | Description |
 |--------|-------------|
 | `.new(expected_items:, false_positive_rate:)` | Create a new bloom filter |
+| `.optimal_size(expected_items:, false_positive_rate:)` | Compute optimal bit-array size for a target false positive rate |
+| `.optimal_hash_count(size:, expected_items:)` | Compute optimal hash-function count for a given bit-array size |
 | `#add(item)` | Add an item to the filter |
 | `#include?(item)` | Check if an item might be in the filter |
 | `#merge(other)` | Merge another compatible filter into this one |

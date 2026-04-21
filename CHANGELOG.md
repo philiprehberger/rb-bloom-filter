@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-21
+
+### Added
+- `Philiprehberger::BloomFilter.optimal_size` — compute bit-array size for a target false-positive rate
+- `Philiprehberger::BloomFilter.optimal_hash_count` — compute optimal hash-function count for a given size
+
 ## [0.5.1] - 2026-04-15
 
 ### Fixed
