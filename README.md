@@ -66,6 +66,14 @@ filter.bulk_add(%w[alpha beta gamma delta])
 filter.include?('beta')  # => true
 ```
 
+### Bulk Membership
+
+```ruby
+filter = Philiprehberger::BloomFilter.new(expected_items: 10_000)
+filter.bulk_add(%w[alpha beta gamma])
+filter.bulk_include?(%w[alpha beta unseen])  # => [true, true, false]
+```
+
 ### Cardinality Estimation
 
 ```ruby
@@ -216,6 +224,7 @@ restored.include?('hello')  # => true
 | `#memory_usage` | Bit array size in bytes |
 | `#serialize` | Serialize to a hash |
 | `#bulk_add(items)` | Add all items from an enumerable |
+| `#bulk_include?(items)` | Check membership for many items, returning an array of booleans |
 | `#count_estimate` | Estimate unique item count from fill rate |
 | `#intersection(other)` | Create filter matching items in both |
 | `#fill_rate` | Proportion of set bits (0.0 to 1.0) |

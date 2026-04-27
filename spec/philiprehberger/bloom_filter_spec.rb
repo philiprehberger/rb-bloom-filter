@@ -434,6 +434,15 @@ RSpec.describe Philiprehberger::BloomFilter do
     end
   end
 
+  describe '#bulk_include?' do
+    it 'returns an array of booleans aligned with the input items' do
+      filter = described_class.new(expected_items: 100)
+      filter.bulk_add(%w[a b c])
+      results = filter.bulk_include?(%w[a b c unseen])
+      expect(results).to eq([true, true, true, false])
+    end
+  end
+
   describe '#count_estimate' do
     it 'returns zero for empty filter' do
       filter = described_class.new(expected_items: 1000)

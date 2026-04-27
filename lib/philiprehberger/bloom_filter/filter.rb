@@ -96,6 +96,14 @@ module Philiprehberger
         self
       end
 
+      # Check membership for many items at once.
+      #
+      # @param items [Enumerable] items to test
+      # @return [Array<Boolean>] one boolean per input item, in order
+      def bulk_include?(items)
+        items.map { |item| include?(item) }
+      end
+
       # Estimate the number of unique items using the fill rate
       #
       # @return [Float] estimated cardinality

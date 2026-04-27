@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-04-26
+
+### Added
+- `Filter#bulk_include?` — check membership for many items in one call, returning an array of booleans
+
 ## [0.6.0] - 2026-04-21
 
 ### Added
