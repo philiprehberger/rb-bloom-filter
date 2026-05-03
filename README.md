@@ -47,6 +47,19 @@ hash_count = Philiprehberger::BloomFilter.optimal_hash_count(size: bits, expecte
 # => 7
 ```
 
+### Expected False Positive Rate
+
+Estimate the false-positive rate for any custom size, expected-item count, and hash-function count — useful when you've fixed the bit budget or hash count and want to see what FPR you'll actually get.
+
+```ruby
+Philiprehberger::BloomFilter.expected_false_positive_rate(
+  size: 95_851,
+  expected_items: 10_000,
+  hash_count: 7
+)
+# => ~0.01
+```
+
 ### Merge Filters
 
 ```ruby
@@ -216,6 +229,7 @@ restored.include?('hello')  # => true
 | `.new(expected_items:, false_positive_rate:)` | Create a new bloom filter |
 | `.optimal_size(expected_items:, false_positive_rate:)` | Compute optimal bit-array size for a target false positive rate |
 | `.optimal_hash_count(size:, expected_items:)` | Compute optimal hash-function count for a given bit-array size |
+| `.expected_false_positive_rate(size:, expected_items:, hash_count:)` | Estimate FPR for a custom size, item count, and hash-function count |
 | `#add(item)` | Add an item to the filter |
 | `#include?(item)` | Check if an item might be in the filter |
 | `#merge(other)` | Merge another compatible filter into this one |

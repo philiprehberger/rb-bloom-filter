@@ -71,5 +71,27 @@ module Philiprehberger
 
       [(size.to_f / expected_items * Math.log(2)).ceil, 1].max
     end
+
+    # Compute the expected false-positive rate for a given size, item count, and hash count.
+    #
+    # Uses the formula: p = (1 - exp(-k * n / m)) ** k
+    # where m = size, n = expected_items, k = hash_count.
+    #
+    # @param size [Integer] size of the bit array in bits (must be positive)
+    # @param expected_items [Integer] expected number of items (must be positive)
+    # @param hash_count [Integer] number of hash functions (must be positive)
+    # @return [Float] expected false positive rate in [0.0, 1.0]
+    # @raise [ArgumentError] if any argument is not a positive Integer
+    def self.expected_false_positive_rate(size:, expected_items:, hash_count:)
+      raise ArgumentError, 'size must be a positive Integer' unless size.is_a?(Integer) && size.positive?
+      unless expected_items.is_a?(Integer) && expected_items.positive?
+        raise ArgumentError, 'expected_items must be a positive Integer'
+      end
+      unless hash_count.is_a?(Integer) && hash_count.positive?
+        raise ArgumentError, 'hash_count must be a positive Integer'
+      end
+
+      (1 - Math.exp(-hash_count.to_f * expected_items / size))**hash_count
+    end
   end
 end

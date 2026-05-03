@@ -828,4 +828,52 @@ RSpec.describe Philiprehberger::BloomFilter do
       expect(str).to include('fill_rate=')
     end
   end
+
+  describe '.expected_false_positive_rate' do
+    it 'matches the optimal-config target rate within rounding' do
+      n = 1000
+      target = 0.01
+      m = described_class.optimal_size(expected_items: n, false_positive_rate: target)
+      k = described_class.optimal_hash_count(size: m, expected_items: n)
+      result = described_class.expected_false_positive_rate(size: m, expected_items: n, hash_count: k)
+      expect(result).to be_within(0.005).of(target)
+    end
+
+    it 'returns a Float in [0.0, 1.0]' do
+      r = described_class.expected_false_positive_rate(size: 10_000, expected_items: 100, hash_count: 7)
+      expect(r).to be_a(Float)
+      expect(r).to be >= 0.0
+      expect(r).to be <= 1.0
+    end
+
+    it 'decreases as size grows (with same n and k)' do
+      small = described_class.expected_false_positive_rate(size: 1_000, expected_items: 500, hash_count: 7)
+      large = described_class.expected_false_positive_rate(size: 100_000, expected_items: 500, hash_count: 7)
+      expect(large).to be < small
+    end
+
+    it 'increases as expected_items grows (with same m and k)' do
+      few = described_class.expected_false_positive_rate(size: 10_000, expected_items: 100, hash_count: 7)
+      many = described_class.expected_false_positive_rate(size: 10_000, expected_items: 5_000, hash_count: 7)
+      expect(many).to be > few
+    end
+
+    it 'raises ArgumentError when size is non-positive' do
+      expect do
+        described_class.expected_false_positive_rate(size: 0, expected_items: 100, hash_count: 7)
+      end.to raise_error(ArgumentError, /size/)
+    end
+
+    it 'raises ArgumentError when expected_items is non-positive' do
+      expect do
+        described_class.expected_false_positive_rate(size: 1000, expected_items: 0, hash_count: 7)
+      end.to raise_error(ArgumentError, /expected_items/)
+    end
+
+    it 'raises ArgumentError when hash_count is non-positive' do
+      expect do
+        described_class.expected_false_positive_rate(size: 1000, expected_items: 100, hash_count: 0)
+      end.to raise_error(ArgumentError, /hash_count/)
+    end
+  end
 end

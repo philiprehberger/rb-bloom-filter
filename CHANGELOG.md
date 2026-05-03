@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-02
+
+### Added
+- `BloomFilter.expected_false_positive_rate(size:, expected_items:, hash_count:)` for estimating FPR with custom (non-optimal) parameter combinations
+
 ## [0.7.0] - 2026-04-26
 
 ### Added
